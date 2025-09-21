@@ -1,8 +1,13 @@
 import LoadingSkeleton from '@/components/loading';
 import Footer from '@/components/Main/footer';
+import Header from '@/components/Main/header';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { useAppSelector } from '@/hooks/hook';
+import {
+  addToCart,
+  removeMenuFromCart,
+} from '@/Functions/cart/cartSlice/cartListSlice';
+import { useAppDispatch, useAppSelector } from '@/hooks/hook';
 import { getRestoById } from '@/services/services';
 import type { CommentType } from '@/types/InteractionType';
 import { catMenu, type MenuType } from '@/types/restaurantTypes';
@@ -13,7 +18,10 @@ import { useState } from 'react';
 import { useParams } from 'react-router-dom';
 
 const Detail = () => {
+  const { cartList } = useAppSelector((state) => state.cart);
+  console.log('cartlist', cartList);
   const { restoId } = useParams();
+
   const { data, isError, isLoading } = useQuery({
     queryKey: ['resto', restoId],
     queryFn: async () =>
@@ -24,7 +32,10 @@ const Detail = () => {
   if (isError) return <div>Error</div>;
   console.log(data);
   return (
-    <div className='mt-32 '>
+    <div className='flex flex-col gap-12 '>
+      {/* Header */}
+      <Header />
+      {/* Main Content */}
       <div className='custom-container flex flex-col gap-8'>
         {/* Profile */}
         <div className='w-full flex flex-col gap-8'>
@@ -33,26 +44,26 @@ const Detail = () => {
             <img
               src={`${data.images[0]}`}
               alt='image-0'
-              className='object-cover w-[651px] h-[470px] rounded-2xl'
+              className='object-cover w-[651px] h-[470px] rounded-2xl shadow-xl'
             />
 
-            <div className='max-w-[529px] w-full flex flex-col gap-5'>
+            <div className='max-w-[529px] w-full flex flex-col gap-5 '>
               <img
                 src={`${data.images[1]}`}
                 alt='image-0'
-                className='w-full h-[302px] object-cover rounded-2xl'
+                className='w-full h-[302px] object-cover rounded-2xl shadow-xl'
               />
 
               <div className='w-full flex gap-5'>
                 <img
                   src={`${data.images[2]}`}
                   alt='image-0'
-                  className='w-full h-[148px] object-cover rounded-2xl'
+                  className='w-full h-[148px] object-cover rounded-2xl shadow-xl'
                 />
                 <img
                   src={`${data.images[2]}`}
                   alt='image-0'
-                  className='w-full h-[148px] object-cover rounded-2xl'
+                  className='w-full h-[148px] object-cover rounded-2xl shadow-xl'
                 />
               </div>
             </div>
@@ -104,7 +115,7 @@ const Detail = () => {
                 <TabsTrigger
                   key={item.value}
                   value={item.value}
-                  className='px-4 py-2 border border-neutral-300 rounded-full text-md font-semibold text-neutral-950 data-[state=active]:bg-[#FFECEC] data-[state=active]:text-primary-100 data-[state=active]:border-primary-100'
+                  className='px-4 py-2 border border-neutral-300 rounded-full text-md font-semibold text-neutral-950 data-[state=active]:bg-[#FFECEC] data-[state=active]:text-primary-100 data-[state=active]:border-primary-100 cursor-pointer hover:bg-[#FFECEC] hover:text-primary-100'
                 >
                   {item.label}
                 </TabsTrigger>
@@ -119,7 +130,7 @@ const Detail = () => {
               >
                 {Category.value === 'all' && data.menus.length > 0 ? (
                   data.menus.map((item: MenuType) => (
-                    <MenuCart key={item.id} item={item} />
+                    <MenuCart key={item.id} item={item} restoId={data.id} />
                   ))
                 ) : data.menus.filter(
                     (menu: MenuType) => menu.type === Category.value
@@ -127,7 +138,7 @@ const Detail = () => {
                   data.menus
                     .filter((menu: MenuType) => menu.type === Category.value)
                     .map((item: MenuType) => (
-                      <MenuCart key={item.id} item={item} />
+                      <MenuCart key={item.id} item={item} restoId={data.id} />
                     ))
                 ) : (
                   <div>Not Available</div>
@@ -176,9 +187,7 @@ const Detail = () => {
         </div>
       </div>
       {/* footer */}
-      <div className='pt-12'>
-        <Footer />
-      </div>
+      <Footer />
     </div>
   );
 };
@@ -216,8 +225,12 @@ const CommentCart = ({ data }: { data: CommentType }) => {
     </div>
   );
 };
-const MenuCart = ({ item }: { item: MenuType }) => {
+const MenuCart = ({ item, restoId }: { item: MenuType; restoId: number }) => {
   const { cartList } = useAppSelector((state) => state.cart);
+  const dispatch = useAppDispatch();
+  // const menuCart = cartList.find((cartItem) =>
+  //   cartItem.menus.find((menu) => menu.id === item.id)
+  // );
 
   const quantityCart =
     cartList
@@ -232,14 +245,56 @@ const MenuCart = ({ item }: { item: MenuType }) => {
 
   const handleAddToCart = () => {
     setQuantity(() => quantity + 1);
+    try {
+      dispatch(
+        addToCart({
+          restaurantId: restoId,
+          menu: {
+            id: item.id,
+            menu: item,
+            quantity: 1,
+            total: item.price,
+          },
+        })
+      );
+    } catch (error) {
+      console.log(error);
+      throw new Error('Failed to add to cart');
+    }
   };
 
   const handleReduceFromCart = () => {
     setQuantity(() => quantity - 1);
+    try {
+      dispatch(
+        addToCart({
+          restaurantId: restoId,
+          menu: {
+            id: item.id,
+            menu: item,
+            quantity: -1,
+            total: item.price,
+          },
+        })
+      );
+    } catch (error) {
+      console.log(error);
+      throw new Error('Failed to add to cart');
+    }
+  };
+
+  const handleRemoveFromCart = () => {
+    try {
+      dispatch(removeMenuFromCart({ RestoId: restoId, MenuId: item.id }));
+    } catch (error) {
+      console.log(error);
+      throw new Error('Failed to remove From cart');
+    }
+    setQuantity(0);
   };
 
   return (
-    <div className='max-w-[285px] w-full rounded-2xl  shadow-lg'>
+    <div className='max-w-[285px] w-full rounded-2xl  shadow-lg cursor-pointer hover:scale-105 transition-all duration-300 ease-in-out'>
       <img
         src={`${item.image}`}
         alt={item.foodName}
@@ -274,11 +329,12 @@ const MenuCart = ({ item }: { item: MenuType }) => {
         ) : (
           <Button
             className='bg-primary-100 text-white rounded-full h-10 w-20'
-            onClick={() => setQuantity(quantity + 1)}
+            onClick={handleAddToCart}
           >
             Add
           </Button>
         )}
+        <Button onClick={handleRemoveFromCart}>Delete</Button>
       </div>
     </div>
   );

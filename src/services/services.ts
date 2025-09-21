@@ -12,3 +12,8 @@ export const getRestoById = async ({ id }: { id: number }) => {
   const res = await api.get(`/resto/${id}`);
   return res.data;
 };
+
+export const getProfile = async () => {
+  const res = await api.get('/auth/profile');
+  return res.data;
+};

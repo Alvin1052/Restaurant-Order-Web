@@ -49,15 +49,26 @@ export interface RestoProps {
   name: string;
   logo: string;
 }
+
+export interface CartItemByRestoType {
+  restaurantId: number;
+  menus: CartItem[];
+  subtotal: number;
+}
+
 export interface CartItem {
   id: number;
   menu: MenuType;
   quantity: number;
-  itemtotal: number;
+  total: number;
 }
 
-export interface CartItemByRestoType {
-  restaurant: RestoProps;
-  menus: CartItem[];
-  subtotal: number;
+export interface InputCartItemType {
+  restaurantId: number;
+  menu: CartItem;
+}
+
+export interface RemoveCartItemType {
+  RestoId: number;
+  MenuId: number;
 }
